@@ -1,9 +1,12 @@
 from collections import defaultdict
+from collections import Counter
 import itertools
 
 import constraints
 import pddl
 import tools
+from pddl import conditions
+from typing import List
 
 # Notes:
 # All parts of an invariant always use all non-counted variables
@@ -530,3 +533,51 @@ class Invariant:
         # the add-after-delete semantics).
         ensure_inequality(system, add_effect.literal, del_effect.literal)
         return system
+
+
+class GroundInvariant:
+    def __init__(self, literals: set[conditions.NegatedAtom]):
+        self.literals = frozenset(literals)
+
+    def __repr__(self):
+        literals_repr = repr(self.literals)
+        return f"{self.__class__.__name__}(literals={literals_repr})"
+
+    def __eq__(self, other):
+        if not isinstance(other, GroundInvariant):
+            return NotImplemented
+        # counter makes an order independent comparison
+        return self.literals == other.literals
+
+    def __hash__(self):
+        return hash(self.literals)
+
+
+class SchematicInvariant:
+    def __init__(self, literals: List[conditions.Literal], inequalities: List[set[str]], var_mapping: dict[str, str]):
+        self.literals = literals
+        self.inequalities = inequalities
+        self.var_mapping = var_mapping
+        assert len(literals) == 1 or len(literals) == 2
+
+    def __repr__(self):
+        literals_repr = repr(self.literals)
+        inequalities_repr = repr(self.inequalities)
+        var_mapping_repr = repr(self.var_mapping)
+        return f"{self.__class__.__name__}(literals={literals_repr}, inequalities={inequalities_repr}, var_mapping={var_mapping_repr})"
+
+    def __hash__(self):
+        hash_literals = hash(frozenset(literal for literal in self.literals))
+        hash_inequalities = hash(frozenset(frozenset(ineq) for ineq in self.inequalities))
+        hash_var_mapping = hash(tuple(sorted(self.var_mapping.items())))
+        return hash((hash_literals, hash_inequalities, hash_var_mapping))
+
+
+    def __eq__(self, other):
+        if not isinstance(other, SchematicInvariant):
+            return NotImplemented
+        literals_equal = (self.literals == other.literals)
+        inequalities_equal = (self.inequalities == other.inequalities)
+        var_mapping_equal = (self.var_mapping == other.var_mapping)
+
+        return literals_equal and inequalities_equal and var_mapping_equal

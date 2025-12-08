@@ -683,11 +683,12 @@ def build_implied_facts(strips_to_sas, groups, mutex_groups):
 
 
 def dump_statistics(sas_task):
-    print("Translator variables: %d" % len(sas_task.variables.ranges))
-    print("Translator derived variables: %d" %
-          len([layer for layer in sas_task.variables.axiom_layers
-               if layer >= 0]))
-    print("Translator facts: %d" % sum(sas_task.variables.ranges))
+    nmbr_of_variables = len(sas_task.variables.ranges)
+    print("Translator variables: %d" % nmbr_of_variables)
+    print("Translator derived variables: %d" % len([layer for layer in sas_task.variables.axiom_layers if layer >= 0]))
+    nmbr_of_facts = sum(sas_task.variables.ranges)
+    print("Translator facts: %d" % nmbr_of_facts)
+    print("Translator average facts per variable: %f" % (nmbr_of_facts / nmbr_of_variables))
     print("Translator goal facts: %d" % len(sas_task.goal.pairs))
     print("Translator mutex groups: %d" % len(sas_task.mutexes))
     print("Translator total mutex groups size: %d" %
@@ -720,6 +721,8 @@ def main():
                     del action.effects[index]
 
     sas_task = pddl_to_sas(task)
+    print_variable_structure(sas_task)
+    #sas_task.variables.dump()
     dump_statistics(sas_task)
 
     with timers.timing("Writing output"):
@@ -727,6 +730,10 @@ def main():
             sas_task.output(output_file)
     print("Done! %s" % timer)
 
+def print_variable_structure(sas_task):
+    print('Translator variable structure start')
+    sas_task.variables.dump()
+    print('Translator variable structure end')
 
 def handle_sigxcpu(signum, stackframe):
     print()
@@ -760,3 +767,7 @@ if __name__ == "__main__":
     except pddl_parser.ParseError as e:
         print(e)
         sys.exit(TRANSLATE_INPUT_ERROR)
+
+
+
+

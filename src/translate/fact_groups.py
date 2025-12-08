@@ -110,6 +110,10 @@ def collect_all_mutex_groups(groups, atoms):
 def sort_groups(groups):
     return sorted(sorted(group) for group in groups)
 
+def filter_groups(groups: List[List[pddl.Atom]], reachable_facts: Set[pddl.Literal]) -> List[List[pddl.Atom]]:
+    filtered_groups = [[atom for atom in group if atom in reachable_facts] for group in groups]
+    return filtered_groups
+
 def compute_groups(task: pddl.Task, atoms: Set[pddl.Literal],
     reachable_action_params: Dict[pddl.Action, List[str]],
     negative_in_goal: Set[pddl.Atom]) -> Tuple[
@@ -122,8 +126,16 @@ def compute_groups(task: pddl.Task, atoms: Set[pddl.Literal],
         ]:
     groups = invariant_finder.get_groups(task, reachable_action_params)
 
+    '''
     with timers.timing("Instantiating groups"):
         groups = instantiate_groups(groups, task, atoms)
+     '''
+    '''
+    print('result:')
+    for res in groups:
+        print(res)
+    '''
+    groups = filter_groups(groups, atoms)
 
     # Sort here already to get deterministic mutex groups.
     groups = sort_groups(groups)
@@ -132,6 +144,7 @@ def compute_groups(task: pddl.Task, atoms: Set[pddl.Literal],
     #       be unified.
     with timers.timing("Collecting mutex groups"):
         mutex_groups = collect_all_mutex_groups(groups, atoms)
+        #print(mutex_groups)
     with timers.timing("Choosing groups", block=True):
         groups = choose_groups(groups, atoms, negative_in_goal)
     groups = sort_groups(groups)

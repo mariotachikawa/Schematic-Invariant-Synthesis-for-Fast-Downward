@@ -19,9 +19,9 @@ def _get_type_predicate_name(type_name):
 
 class Type:
     def __init__(self, name, basetype_name=None):
-        self.name = name
-        self.basetype_name = basetype_name
-
+        self.name = name # this is the subtype
+        self.basetype_name = basetype_name # This is the super type
+        # example:  vehicle package - locatable, vehicle is name and locatable is basetype_name
     def __str__(self):
         return self.name
 

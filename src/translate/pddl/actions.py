@@ -138,3 +138,19 @@ class PropositionalAction:
         for cond, fact in self.del_effects:
             print("DEL: %s -> %s" % (", ".join(map(str, cond)), fact))
         print("cost:", self.cost)
+
+
+class InstantiatedAction:
+    def __init__(self, name: str, objects: List[str], precondition: List[conditions.Literal], effects: List[conditions.Literal]):
+        self.name = name
+        self.objects = objects
+        self.precondition = precondition
+        self.effects = effects
+
+    def __repr__(self):
+        action_name = self.name
+        objects = repr(self.objects)
+        prec = repr(self.precondition)
+        effec = repr(self.effects)
+
+        return f"{self.__class__.__name__}{action_name}(objects={objects}, precondition={prec}, effects={effec})"

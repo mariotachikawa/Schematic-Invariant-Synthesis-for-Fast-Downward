@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
-
-
-from collections import deque, defaultdict
+import string
+from collections import deque, defaultdict, Counter
 import itertools
 import random
 import time
@@ -11,6 +10,14 @@ import invariants
 import options
 import pddl
 import timers
+import schematic_invariant_finder
+import max_clique_computer
+import sat_check
+from pddl import predicates
+from pddl import conditions
+from pddl import tasks
+from pddl import pddl_types
+from pddl import actions
 
 class BalanceChecker:
     def __init__(self, task, reachable_action_params):
@@ -73,6 +80,7 @@ class BalanceChecker:
         else:
             return action
 
+# Gives all fluents: set of all predicates, that can change over time!
 def get_fluents(task):
     fluent_names = set()
     for action in task.actions:
@@ -90,6 +98,7 @@ def get_initial_invariants(task):
                         all_args[omitted:-1])
             part = invariants.InvariantPart(predicate.name, inv_args, omitted)
             yield invariants.Invariant((part,))
+
 
 def find_invariants(task, reachable_action_params):
     limit = options.invariant_generation_max_candidates
@@ -141,12 +150,44 @@ def useful_groups(invariants, initial_facts):
     for (invariant, parameters) in useful_groups:
         yield [part.instantiate(parameters) for part in sorted(invariant.parts)]
 
+
 # returns a list of mutex groups (parameters instantiated, counted variables not)
 def get_groups(task, reachable_action_params=None) -> List[List[pddl.Atom]]:
+    #print("Task dump: -----------------------------------")
+    #task.dump()
+
+    '''
+    subtype_dict = schematic_invariant_finder.get_subtype_dict(task.types)
+    object_buckets = schematic_invariant_finder.create_object_buckets(task, subtype_dict)
+    initial_atoms = [atom for atom in task.init if isinstance(atom, conditions.Atom)]
+    predicate_bucket = schematic_invariant_finder.create_predicate_buckets(task)
+    sorted_types = schematic_invariant_finder.sort_types(task.types, subtype_dict)
+    limited = schematic_invariant_finder.generate_limited_grounding_function(task, object_buckets, subtype_dict)
+    
+    #invs = add_additional_candidates(task, 0, set(), set(), object_buckets, subtype_dict, initial_atoms, predicate_bucket)
+    #for inv in invs:
+       # print(inv)
+    action = task.actions[0]
+    name = action.name
+    effects = action.precondition.parts
+
+    print('action: ' + name)
+    print(effects)
+
+    '''
+
     with timers.timing("Finding invariants", block=True):
-        invariants = list(find_invariants(task, reachable_action_params))
-    with timers.timing("Checking invariant weight"):
-        result = list(useful_groups(invariants, task.init))
+        #invariants = list(find_invariants(task, reachable_action_params))
+        invariants = schematic_invariant_finder.find_schematic_invariants(task)
+    #with timers.timing("Checking invariant weight"):
+     #   result = list(useful_groups(invariants, task.init))
+    with timers.timing("Generate mutex groups"):
+        result = max_clique_computer.generate_mutex_groups(invariants)
+
+    #print('result:')
+    #for res in result:
+       # print(res)
+
     return result
 
 if __name__ == "__main__":
